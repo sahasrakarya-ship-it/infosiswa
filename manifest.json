@@ -1,0 +1,22 @@
+{
+"name": "Siswa Spenday",
+"short_name": "Siswa Spenday",
+"start_url": "./",
+"display": "standalone",
+"background_color": "#06080a",
+"theme_color": "#0b0e14",
+"icons": [
+{
+"src": "./infosiswa.png",
+"sizes": "192x192",
+"type": "image/png",
+"purpose": "any maskable"
+},
+{
+"src": "./infosiswa.png",
+"sizes": "512x512",
+"type": "image/png",
+"purpose": "any maskable"
+}
+]
+}

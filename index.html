@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Satelit Siswa SMPN 2 Ayah</title>
+    
+    <link rel="icon" type="image/png" href="./infosiswa.png" />
+    <link rel="apple-touch-icon" href="./infosiswa.png" />
+    <meta name="theme-color" content="#06080a" />
+    
+    <!-- Memanggil file manifest terpisah agar Instalasi PWA sempurna tanpa logo browser -->
+    <link rel="manifest" href="./manifest.json" />
+
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+        // Fungsi Inisialisasi OneSignal
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        window.OneSignalDeferred.push(async function(OneSignal) {
+            try {
+                await OneSignal.init({
+                    appId: "b85dbc68-60a7-4f7a-9a9e-de3d4e667769",
+                    notifyButton: {
+                        enable: true,
+                    },
+                });
+                
+                // Memicu jendela pop-up permintaan izin (Prompt Permission) saat aplikasi dibuka
+                OneSignal.Slidedown.promptPush();
+            } catch (error) {
+                console.warn("OneSignal Web Push belum dikonfigurasi penuh di dashboard:", error);
+            }
+        });
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script>
+        Babel.registerPreset('react-classic', {
+            presets: [
+                [Babel.availablePresets['react'], { runtime: 'classic' }]
+            ]
+        });
+    </script>
+
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; overscroll-behavior-y: none; background-color: #06080a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        #root { height: 100%; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #222635; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #30364d; }
+        
+        .light-scrollbar::-webkit-scrollbar { width: 4px; }
+        .light-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .light-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .light-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .format-rte-preview-light ul { list-style-type: disc; margin-left: 1.5rem; color: #374151; }
+        .format-rte-preview-light ol { list-style-type: decimal; margin-left: 1.5rem; color: #374151; }
+        .format-rte-preview-light b { font-weight: bold; color: #374151; }
+
+        /* CSS Wajib untuk ContentEditable agar stabil di HP dan memiliki Placeholder */
+        .content-editable-input {
+            -webkit-user-select: text !important;
+            user-select: text !important;
+            cursor: text;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .content-editable-input:empty::before {
+            content: attr(data-placeholder);
+            color: #6b7280; /* Tailwind gray-500 */
+            pointer-events: none;
+            display: block;
+        }
+
+        /* --- TEMA FUTURISTIK & NEON --- */
+        .cyber-bg {
+            background-color: #020617; /* Slate-950 */
+            background-image:
+                linear-gradient(rgba(0, 210, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 210, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        .cyber-bg::before {
+            content: "";
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at center, rgba(0,210,255,0.08) 0%, transparent 60%);
+            animation: pulse-glow 6s infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            100% { transform: scale(1.1); opacity: 1; }
+        }
+        .neon-line-v {
+            position: absolute; width: 2px; height: 100px;
+            background: linear-gradient(to bottom, transparent, #00d2ff, transparent);
+            animation: scan-v 5s linear infinite;
+            box-shadow: 0 0 10px #00d2ff;
+        }
+        .neon-line-h {
+            position: absolute; height: 2px; width: 100px;
+            background: linear-gradient(to right, transparent, #00d2ff, transparent);
+            animation: scan-h 6s linear infinite;
+            box-shadow: 0 0 10px #00d2ff;
+        }
+        @keyframes scan-v {
+            0% { top: -20%; opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { top: 120%; opacity: 0; }
+        }
+        @keyframes scan-h {
+            0% { left: -20%; opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { left: 120%; opacity: 0; }
+        }
+        .delay-1 { animation-delay: 0s; }
+        .delay-2 { animation-delay: -2s; }
+        .delay-3 { animation-delay: -4s; }
+        .delay-4 { animation-delay: -1s; }
+
+        /* BINGKAI BESI (MECH FRAME) */
+        .mech-frame-wrapper {
+            position: relative;
+            padding: 16px;
+            /* Bentuk octagon luar */
+            clip-path: polygon(24px 0%, calc(100% - 24px) 0%, 100% 24px, 100% calc(100% - 24px), calc(100% - 24px) 100%, 24px 100%, 0% calc(100% - 24px), 0% 24px);
+            background: linear-gradient(135deg, #475569, #1e293b, #0f172a, #334155);
+            /* Efek timbul */
+            box-shadow: inset 2px 2px 5px rgba(255,255,255,0.2), inset -2px -2px 10px rgba(0,0,0,0.8);
+        }
+        .mech-frame-inner {
+            padding: 6px;
+            clip-path: polygon(18px 0%, calc(100% - 18px) 0%, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 18px 100%, 0% calc(100% - 18px), 0% 18px);
+            background: linear-gradient(to bottom right, #94a3b8, #475569, #1e293b);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .mech-frame-core {
+            padding: 3px;
+            clip-path: polygon(15px 0%, calc(100% - 15px) 0%, 100% 15px, 100% calc(100% - 15px), calc(100% - 15px) 100%, 15px 100%, 0% calc(100% - 15px), 0% 15px);
+            background-color: #020617; /* Celah gelap */
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .mech-paper {
+            clip-path: polygon(12px 0%, calc(100% - 12px) 0%, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0% calc(100% - 12px), 0% 12px);
+        }
+
+        /* Detail Baut/Paku Besi */
+        .rivet {
+            width: 10px; height: 10px;
+            background: radial-gradient(circle at 30% 30%, #f1f5f9, #94a3b8, #334155);
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: inset -1px -1px 3px rgba(0,0,0,0.6), 1px 1px 2px rgba(255,255,255,0.3), 0 0 4px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        .rivet::after {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(45deg);
+            width: 60%; height: 2px; background: rgba(0,0,0,0.4);
+        }
+        .rivet::before {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg);
+            width: 60%; height: 2px; background: rgba(0,0,0,0.4);
+        }
+
+        /* Aksen Neon pada Bingkai */
+        .mech-accent {
+            position: absolute; background: #00d2ff;
+            box-shadow: 0 0 5px #00d2ff, 0 0 10px #00d2ff;
+            z-index: 5; opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="env,react-classic">
+        const { useState, useEffect, useRef } = React;
+
+        // Inisialisasi Firebase secara Global
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbZcPJHnaARMEjg23iwViwtfzjwb23vKg",
+            authDomain: "project-umum-a58eb.firebaseapp.com",
+            projectId: "project-umum-a58eb",
+            storageBucket: "project-umum-a58eb.firebasestorage.app",
+            messagingSenderId: "778774567319",
+            appId: "1:778774567319:web:1c2b35335ce1c3550bccd2"
+        };
+
+        // Pastikan Firebase hanya diinisialisasi sekali
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        const AlertCircle = ({size, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>;
+        const LogIn = ({size, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>;
+        const ChevronLeft = ({size, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="15 18 9 12 15 6"/></svg>;
+        const ChevronRight = ({size, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="9 18 15 12 9 6"/></svg>;
+        const LogOut = ({size, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+        const User = ({size, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+        const Camera = ({size, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>;
+        const CalendarDays = ({size, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>;
+        const BookOpen = ({size, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>;
+        const FileText = ({size, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
+        const Download = ({size, className}) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+
+        function App() {
+          const [currentInfoIndex, setCurrentInfoIndex] = useState(0);
+
+          const [inputNama, setInputNama] = useState('');
+          const [inputKelas, setInputKelas] = useState('');
+          const [loginError, setLoginError] = useState('');
+          const [studentData, setStudentData] = useState(null);
+
+          const namaRef = useRef(null);
+          const kelasRef = useRef(null);
+
+          const [announcements, setAnnouncements] = useState([]);
+          const [studentList, setStudentList] = useState([]);
+          const [isLoadingData, setIsLoadingData] = useState(true);
+          const [koneksiError, setKoneksiError] = useState('');
+
+          const fileInputRef = useRef(null);
+          const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+          const [uploadError, setUploadError] = useState('');
+          const [imageError, setImageError] = useState(false);
+
+          const [selectedImage, setSelectedImage] = useState(null);
+          const [isZoomed, setIsZoomed] = useState(false);
+          
+          const [touchStart, setTouchStart] = useState(null);
+          const [touchEnd, setTouchEnd] = useState(null);
+          const minSwipeDistance = 50;
+
+          const [deferredPrompt, setDeferredPrompt] = useState(null);
+          const [showInstallButton, setShowInstallButton] = useState(false);
+
+          const appId = 'satelit-sekolah-app';
+
+          useEffect(() => {
+            // PWA Setup: Deteksi status instalasi dan trigger browser
+            const handleBeforeInstallPrompt = (e) => {
+              e.preventDefault();
+              setDeferredPrompt(e);
+              setShowInstallButton(true);
+            };
+
+            const handleAppInstalled = () => {
+              setShowInstallButton(false);
+              setDeferredPrompt(null);
+            };
+
+            window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            window.addEventListener('appinstalled', handleAppInstalled);
+
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+              setShowInstallButton(false);
+            }
+
+            return () => {
+              window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+              window.removeEventListener('appinstalled', handleAppInstalled);
+            };
+          }, []);
+
+          useEffect(() => {
+            const savedSession = localStorage.getItem('smpn2ayah_student_session');
+            if (savedSession) {
+              try {
+                setStudentData(JSON.parse(savedSession));
+              } catch (e) {
+                localStorage.removeItem('smpn2ayah_student_session');
+              }
+            }
+          }, []);
+
+          useEffect(() => { setImageError(false); }, [studentData?.foto]);
+
+          const getDirectImageUrl = (url) => {
+            if (!url) return '';
+            let match = url.match(/\/d\/(.+?)\//);
+            if (match && match[1]) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+            match = url.match(/[?&]id=(.+?)(&|$)/);
+            if (match && match[1]) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+            return url;
+          };
+
+          useEffect(() => {
+            const initFirebaseData = async () => {
+                try {
+                    await auth.signInAnonymously();
+
+                    const infoRef = db.collection(`artifacts/${appId}/public/data/info`);
+                    const siswaRef = db.collection(`artifacts/${appId}/public/data/siswa`);
+
+                    infoRef.onSnapshot((snapshot) => {
+                        let dataInfo = [];
+                        snapshot.forEach(doc => dataInfo.push({ id: doc.id, ...doc.data() }));
+                        dataInfo.sort((a, b) => b.timestamp - a.timestamp);
+                        setAnnouncements(dataInfo);
+                    });
+
+                    siswaRef.onSnapshot((snapshot) => {
+                        let dataSiswa = [];
+                        snapshot.forEach(doc => dataSiswa.push({ id: doc.id, ...doc.data() }));
+                        setStudentList(dataSiswa);
+                        setIsLoadingData(false);
+                        setKoneksiError('');
+                    }, (err) => {
+                        setKoneksiError("Gagal menyambung ke database.");
+                        setIsLoadingData(false);
+                    });
+                } catch (error) {
+                    console.error("Firebase Error: ", error);
+                    setKoneksiError("Gagal otentikasi server.");
+                    setIsLoadingData(false);
+                }
+            };
+            
+            initFirebaseData();
+          }, [appId]);
+
+          const handleLogin = () => {
+            if (!inputNama.trim() || !inputKelas.trim()) { setLoginError("Username dan Password tidak boleh kosong"); return; }
+            if (studentList.length === 0 && !isLoadingData) { setLoginError("Sistem belum terhubung."); return; }
+            
+            const searchName = inputNama.trim().toLowerCase();
+            const searchClass = inputKelas.trim().toUpperCase();
+            
+            const found = studentList.find(s => 
+                (s.nama_lower || (s.nama && s.nama.toLowerCase())) === searchName &&
+                (s.kelas && s.kelas.toUpperCase() === searchClass)
+            );
+            
+            if (found) {
+              setLoginError(''); 
+              setStudentData(found);
+              localStorage.setItem('smpn2ayah_student_session', JSON.stringify(found));
+            } else setLoginError("Username atau Password salah.");
+          };
+
+          const handleLogout = () => {
+            localStorage.removeItem('smpn2ayah_student_session');
+            setStudentData(null); 
+            setInputNama(''); 
+            setInputKelas('');
+            if (namaRef.current) namaRef.current.innerText = '';
+            if (kelasRef.current) kelasRef.current.innerText = '';
+          };
+
+          const handlePhotoChange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) { setUploadError("Maksimal foto 5MB!"); setTimeout(() => setUploadError(''), 3000); return; }
+            setIsUploadingPhoto(true); setUploadError('');
+
+            const compressImage = (file) => {
+              return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                  const img = new Image();
+                  img.src = event.target.result;
+                  img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 400; 
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const base64 = canvas.toDataURL('image/jpeg', 0.7); 
+                    resolve(base64);
+                  };
+                };
+              });
+            };
+
+            try {
+                const base64String = await compressImage(file);
+                const studentDocRef = db.doc(`artifacts/${appId}/public/data/siswa/${studentData.id}`);
+                
+                await studentDocRef.update({ foto: base64String });
+                
+                const updatedData = { ...studentData, foto: base64String };
+                setStudentData(updatedData);
+                localStorage.setItem('smpn2ayah_student_session', JSON.stringify(updatedData));
+            } catch (error) { 
+                setUploadError("Koneksi terputus.");
+                console.error(error);
+            } finally { 
+                setIsUploadingPhoto(false); 
+                setTimeout(() => setUploadError(''), 3000); 
+                if (fileInputRef.current) fileInputRef.current.value = ''; 
+            }
+          };
+
+          // --- LOGIKA "SATPAM PENYORTIR" PENGUMUMAN ---
+          // Ekstrak angka kelas (Misal: "9A" -> "9")
+          const tingkatKelas = studentData && studentData.kelas ? String(studentData.kelas).match(/\d+/)?.[0] : null;
+
+          // Filter pengumuman berdasarkan kelas atau "semua"
+          const filteredAnnouncements = announcements.filter(info => {
+             // Jika data lama tidak punya field target, anggap saja untuk "semua"
+             if (!info.target) return true;
+             // Loloskan jika target memuat "semua" ATAU memuat tingkatKelas siswa yang login
+             if (info.target.includes('semua') || (tingkatKelas && info.target.includes(tingkatKelas))) {
+                 return true;
+             }
+             return false;
+          });
+
+          // Pastikan index saat ini aman (tidak melampaui jumlah data yang sudah difilter)
+          const activeIndex = currentInfoIndex >= filteredAnnouncements.length ? 0 : currentInfoIndex;
+          const currentInfo = filteredAnnouncements[activeIndex];
+
+          const nextInfo = () => {
+            if (filteredAnnouncements.length === 0) return;
+            setCurrentInfoIndex((prev) => (prev >= filteredAnnouncements.length - 1 ? 0 : prev + 1));
+          };
+
+          const prevInfo = () => {
+            if (filteredAnnouncements.length === 0) return;
+            setCurrentInfoIndex((prev) => (prev <= 0 ? filteredAnnouncements.length - 1 : prev - 1));
+          };
+
+          const onTouchStartEvent = (e) => { setTouchEnd(null); setTouchStart(e.targetTouches[0].clientX); };
+          const onTouchMoveEvent = (e) => setTouchEnd(e.targetTouches[0].clientX);
+          const onTouchEndEvent = () => {
+            if (!touchStart || !touchEnd) return;
+            const distance = touchStart - touchEnd;
+            if (distance > minSwipeDistance) nextInfo();
+            if (distance < -minSwipeDistance) prevInfo();
+          };
+
+          const formatTanggal = (tanggalSistem) => {
+            if (!tanggalSistem || tanggalSistem === "-") return "-";
+            const dateObj = new Date(tanggalSistem);
+            if (isNaN(dateObj.getTime())) return tanggalSistem; 
+            return dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+          };
+
+          // Fungsi untuk memaksakan unduhan file
+          const handleDownload = async (url, tipe) => {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = tipe === 'image' ? 'Lampiran_Info.jpg' : 'Lampiran_Info.pdf';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+            } catch (error) {
+                // Jika terhalang CORS, otomatis buka di tab baru sebagai alternatif
+                window.open(url, '_blank');
+            }
+          };
+
+          const handleInstallClick = async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+               setShowInstallButton(false);
+            }
+            setDeferredPrompt(null);
+          };
+
+          // HALAMAN LOGIN SCREEN
+          const loginContent = (
+            <div className="flex flex-col h-full bg-[#0b0e14] p-6 relative overflow-y-auto custom-scrollbar justify-center">
+                <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-indigo-600/30 rounded-full blur-[80px] pointer-events-none"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 bg-cyan-600/20 rounded-full blur-[80px] pointer-events-none"></div>
+
+                {showInstallButton && (
+                    <div className="absolute top-4 left-4 z-50">
+                      <button onClick={handleInstallClick} className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)] flex items-center gap-1.5 border border-emerald-300/50 transition-all transform hover:scale-105">
+                        <Download size={14} /> INSTALL
+                      </button>
+                    </div>
+                )}
+
+                {koneksiError && (
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2 w-[90%] bg-red-900/50 text-red-400 text-xs p-2 rounded-lg flex items-center justify-center gap-2 shadow-sm z-50 border border-red-500/50">
+                    <AlertCircle size={14} className="shrink-0" />
+                    <span className="font-medium">{koneksiError}</span>
+                  </div>
+                )}
+
+                <div className="bg-[#151822]/80 backdrop-blur-xl rounded-3xl p-6 shadow-[0_0_30px_rgba(99,102,241,0.15)] border border-indigo-500/30 flex flex-col items-center relative z-10 mx-auto w-full max-w-sm">
+                    <img src="./infosiswa.png" alt="Logo" className="w-20 h-20 mb-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent mb-6 text-center leading-tight">LOGIN INFO SISWA</h2>
+                    
+                    <div className="w-full space-y-4 mb-6">
+                        <div>
+                            <label className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider mb-1.5 block">Username (Nama Lengkap)</label>
+                            <div 
+                                contentEditable="true"
+                                suppressContentEditableWarning={true}
+                                ref={namaRef}
+                                data-placeholder="Ketik nama lengkap..."
+                                onInput={(e) => setInputNama(e.currentTarget.innerText)}
+                                onKeyDown={(e) => { if(e.key === 'Enter') e.preventDefault(); }}
+                                className="w-full px-4 py-3 rounded-xl border border-[#222635] focus:outline-none focus:ring-1 focus:ring-cyan-500 text-sm bg-[#0b0e14] text-white transition-all content-editable-input"
+                                style={{ minHeight: '44px' }}
+                            ></div>
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider mb-1.5 block">Password (Kelas)</label>
+                            <div 
+                                contentEditable="true"
+                                suppressContentEditableWarning={true}
+                                ref={kelasRef}
+                                data-placeholder="Ketik kelas (Cth: 9E)"
+                                onInput={(e) => setInputKelas(e.currentTarget.innerText)}
+                                onKeyDown={(e) => { if(e.key === 'Enter') e.preventDefault(); }}
+                                className="w-full px-4 py-3 rounded-xl border border-[#222635] focus:outline-none focus:ring-1 focus:ring-cyan-500 text-sm bg-[#0b0e14] text-white transition-all uppercase content-editable-input"
+                                style={{ minHeight: '44px' }}
+                            ></div>
+                        </div>
+                    </div>
+
+                    {loginError && <span className="text-xs text-red-400 font-medium bg-red-900/20 border border-red-500/30 px-3 py-2 rounded-lg w-full text-center mb-4">{loginError}</span>}
+                    
+                    <button onClick={handleLogin} disabled={isLoadingData} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white px-5 py-3.5 rounded-xl font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-all transform hover:scale-105 border border-cyan-400/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span>{isLoadingData ? 'MENGHUBUNGKAN...' : 'MASUK'}</span>{!isLoadingData && <LogIn size={18} />}
+                    </button>
+                </div>
+            </div>
+          );
+
+          // HALAMAN UTAMA (MADING INFO)
+          const mainContent = (
+            <div className="flex flex-col h-full cyber-bg p-4 sm:p-6 relative overflow-y-auto overflow-x-hidden custom-scrollbar">
+              {/* Efek Garis Neon Bergerak */}
+              <div className="neon-line-v delay-1 left-[15%]"></div>
+              <div className="neon-line-v delay-3 right-[25%]"></div>
+              <div className="neon-line-h delay-2 top-[20%]"></div>
+              <div className="neon-line-h delay-4 bottom-[15%]"></div>
+
+              {showInstallButton && (
+                  <div className="absolute top-4 left-4 z-50">
+                    <button onClick={handleInstallClick} className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)] flex items-center gap-1.5 border border-emerald-300/50 transition-all transform hover:scale-105">
+                      <Download size={14} /> INSTALL
+                    </button>
+                  </div>
+              )}
+
+              {koneksiError && (
+                <div className="absolute top-2 left-2 right-2 bg-red-900/50 text-red-400 text-xs p-2 rounded-lg flex items-center gap-2 shadow-sm z-50 border border-red-500/50">
+                  <AlertCircle size={14} className="shrink-0" />
+                  <span className="font-medium">{koneksiError}</span>
+                </div>
+              )}
+
+              {/* BAR FOTO PROFIL & NAMA (DESAIN MENGIKUTI TEMA FUTURISTIK) */}
+              <div className="flex items-center justify-between space-y-0 relative z-10 mt-6 min-h-[72px] bg-[#0c1220]/80 backdrop-blur-md border border-[#1e293b] rounded-2xl p-4 shadow-[0_0_15px_rgba(0,0,0,0.5)] mb-6 mx-auto w-full max-w-[420px]">
+                  <div className="absolute inset-0 rounded-2xl border border-[#00d2ff]/20 pointer-events-none"></div>
+                  <div className="flex items-center gap-3 relative z-10">
+                      <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handlePhotoChange} />
+                      <div onClick={() => !isUploadingPhoto && fileInputRef.current?.click()} className={`w-12 h-12 shrink-0 bg-[#020617] rounded-full flex items-center justify-center shadow-inner border border-[#00d2ff]/50 relative overflow-hidden group ${!isUploadingPhoto ? 'cursor-pointer hover:border-[#00d2ff] transition-all' : ''}`}>
+                          {isUploadingPhoto ? (
+                              <div className="absolute inset-0 bg-[#0c1220]/90 flex flex-col items-center justify-center z-20">
+                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00d2ff]"></div>
+                              </div>
+                          ) : (studentData?.foto && !imageError) ? (
+                              <>
+                                <img src={getDirectImageUrl(studentData.foto)} alt="Profil Siswa" className="w-full h-full object-cover" onError={() => setImageError(true)} />
+                                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                   <Camera size={14} className="text-[#00d2ff]" />
+                                </div>
+                              </>
+                          ) : (
+                              <User size={20} className="text-[#00d2ff]" />
+                          )}
+                      </div>
+                      <div className="flex flex-col justify-center">
+                          <h3 className="text-sm font-bold text-gray-100 leading-tight truncate max-w-[160px]">{studentData?.nama || "-"}</h3>
+                          <span className="text-[10px] text-[#00d2ff] font-semibold tracking-wide">KELAS {studentData?.kelas || "-"}</span>
+                      </div>
+                  </div>
+                  {uploadError ? (
+                      <span className="text-[9px] text-red-400 font-medium px-2 relative z-10">{uploadError}</span>
+                  ) : (
+                      <button onClick={handleLogout} className="p-2 bg-red-900/30 hover:bg-red-800/40 text-red-400 border border-red-900/50 rounded-xl transition-all relative z-10" title="Keluar">
+                          <LogOut size={18} />
+                      </button>
+                  )}
+              </div>
+
+              <div className="flex-1 flex items-center justify-center relative z-10 pb-4 w-full">
+                
+                {/* PEMBUNGKUS BINGKAI BESI */}
+                <div className="mech-frame-wrapper w-full max-w-[420px] h-full max-h-[620px] flex flex-col mx-auto drop-shadow-[0_0_20px_rgba(0,210,255,0.15)]">
+                    
+                    {/* Paku Besi (Rivets) */}
+                    <div className="rivet top-[6px] left-[60px]"></div>
+                    <div className="rivet top-[6px] right-[60px]"></div>
+                    <div className="rivet bottom-[6px] left-[60px]"></div>
+                    <div className="rivet bottom-[6px] right-[60px]"></div>
+                    <div className="rivet top-[60px] left-[6px]"></div>
+                    <div className="rivet bottom-[60px] left-[6px]"></div>
+                    <div className="rivet top-[60px] right-[6px]"></div>
+                    <div className="rivet bottom-[60px] right-[6px]"></div>
+
+                    {/* Aksen Neon Biru di Bingkai */}
+                    <div className="mech-accent w-[40px] h-[2px] top-0 left-1/2 -translate-x-1/2"></div>
+                    <div className="mech-accent w-[40px] h-[2px] bottom-0 left-1/2 -translate-x-1/2"></div>
+                    <div className="mech-accent w-[2px] h-[40px] top-1/2 left-0 -translate-y-1/2"></div>
+                    <div className="mech-accent w-[2px] h-[40px] top-1/2 right-0 -translate-y-1/2"></div>
+
+                    <div className="mech-frame-inner">
+                        <div className="mech-frame-core">
+                            
+                            {/* KERTAS INFO (Dimasukkan ke dalam bingkai besi) */}
+                            <div 
+                              className="mech-paper bg-[#f8fafc] w-full flex-1 flex flex-col overflow-hidden relative"
+                              onTouchStart={onTouchStartEvent} onTouchMove={onTouchMoveEvent} onTouchEnd={onTouchEndEvent}
+                            >
+                              <div className="bg-[#f8fafc] text-gray-900 px-4 pt-4 pb-3 flex items-center justify-between border-b-[3px] border-double border-gray-800 shrink-0">
+                                <img src="./kebumen.png" alt="Kebumen" className="w-10 h-10 object-contain shrink-0" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://placehold.co/100x100/f8fafc/cbd5e1?text=KBM'; }} />
+                                <div className="flex-1 flex flex-col items-center justify-center text-center px-2 gap-0">
+                                  <h2 className="text-[17px] font-bold text-gray-900 leading-tight">INFO TERKINI</h2>
+                                  <p className="text-[17px] font-bold text-gray-900 leading-tight">SMP NEGERI 2 AYAH</p>
+                                </div>
+                                <img src="./smpn2ayah.png" alt="SMPN 2 Ayah" className="w-10 h-10 object-contain shrink-0" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'https://placehold.co/100x100/f8fafc/cbd5e1?text=SMP'; }} />
+                              </div>
+                              
+                              <div className="p-3 sm:p-4 relative flex-1 flex flex-col justify-between bg-[#f8fafc] overflow-hidden">
+                                {isLoadingData ? (
+                                  <div className="flex flex-col items-center justify-center text-indigo-600 h-full py-10">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
+                                    <p className="text-sm font-medium animate-pulse">Memuat Info...</p>
+                                  </div>
+                                ) : filteredAnnouncements.length > 0 ? (
+                                  <div className="flex flex-col h-full overflow-hidden">
+                                    <div className="transition-all duration-300 ease-in-out w-full px-1 flex flex-col flex-1 overflow-hidden">
+                                      <h3 className="text-lg font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2 leading-tight text-center shrink-0">
+                                        {currentInfo?.judul}
+                                      </h3>
+                                      
+                                      <div 
+                                         className="text-gray-700 text-sm leading-relaxed overflow-y-auto pr-2 light-scrollbar format-rte-preview-light flex-1"
+                                         dangerouslySetInnerHTML={{ __html: currentInfo?.konten }}
+                                      />
+
+                                      {currentInfo?.lampiranUrl && (
+                                         <div className="mt-4 border-t border-gray-100 pt-3 shrink-0">
+                                            {currentInfo.lampiranTipe === 'image' ? (
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="relative group">
+                                                        <img src={currentInfo.lampiranUrl} alt="Lampiran Info" className="w-full h-auto max-h-[150px] object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-90 transition-opacity" onClick={() => { setSelectedImage(currentInfo.lampiranUrl); setIsZoomed(false); }}/>
+                                                        <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[9px] px-2 py-1 rounded flex items-center gap-1 pointer-events-none">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                                                            Ketuk Perbesar
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={() => handleDownload(currentInfo.lampiranUrl, 'image')} className="inline-flex items-center justify-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50/50 p-2.5 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-100 w-full mt-1">
+                                                        <Download size={16} /> Unduh Gambar
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col gap-2">
+                                                    <a href={currentInfo.lampiranUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 text-xs font-bold text-indigo-700 bg-indigo-50/50 p-2.5 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-100 w-full">
+                                                        <FileText size={16} /> Buka Lampiran PDF
+                                                    </a>
+                                                    <button onClick={() => handleDownload(currentInfo.lampiranUrl, 'pdf')} className="inline-flex items-center justify-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50/50 p-2.5 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-100 w-full mt-1">
+                                                        <Download size={16} /> Unduh PDF
+                                                    </button>
+                                                </div>
+                                            )}
+                                         </div>
+                                      )}
+                                    </div>
+
+                                    <div className="mt-4 flex justify-between items-end border-t border-gray-100 pt-3 shrink-0">
+                                      <button onClick={prevInfo} className="p-2 bg-[#f8fafc] rounded-full shadow-sm hover:bg-gray-100 text-slate-700 border border-gray-200 transition-all hover:scale-110 shrink-0 self-center">
+                                        <ChevronLeft size={20} />
+                                      </button>
+
+                                      <div className="flex flex-col items-center flex-1 mx-2">
+                                        <p className="text-[10px] text-gray-500 font-semibold italic text-center leading-none">
+                                          {formatTanggal(currentInfo?.tanggal)}
+                                        </p>
+                                        <img src="./stempel.png" alt="Stempel Resmi" className="w-24 h-24 object-contain opacity-90 mix-blend-multiply drop-shadow-sm -mt-1" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                                      </div>
+
+                                      <button onClick={nextInfo} className="p-2 bg-[#f8fafc] rounded-full shadow-sm hover:bg-gray-100 text-slate-700 border border-gray-200 transition-all hover:scale-110 shrink-0 self-center">
+                                        <ChevronRight size={20} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-center text-gray-400 font-medium py-10">Belum ada info terbaru untuk kelas Anda.</p>
+                                )}
+                              </div>
+                              
+                              <div className="flex justify-center pb-3 pt-1 gap-1.5 bg-[#f8fafc] relative z-10 shrink-0 border-t border-gray-100">
+                                {!isLoadingData && filteredAnnouncements.length > 0 && filteredAnnouncements.map((_, idx) => (
+                                  <div key={idx} className={`h-2 rounded-full transition-all duration-300 ${idx === activeIndex ? 'w-6 bg-slate-600' : 'w-2 bg-gray-300'}`} />
+                                ))}
+                              </div>
+                            </div>
+                            {/* AKHIR KERTAS INFO */}
+
+                        </div>
+                    </div>
+                </div>
+                {/* AKHIR BINGKAI BESI */}
+              </div>
+            </div>
+          );
+
+          return (
+            <div className="h-[100dvh] w-full bg-[#06080a] flex items-center justify-center p-0 sm:p-4 font-sans text-gray-800 overflow-hidden">
+              <div className="w-full h-full sm:max-w-[400px] sm:h-[800px] sm:max-h-[90vh] bg-[#0b0e14] sm:rounded-[2.5rem] shadow-2xl overflow-hidden sm:ring-8 sm:ring-[#151822] relative flex flex-col">
+                
+                {/* TAMPILKAN LOGIN JIKA BELUM MASUK, TAMPILKAN MADING JIKA SUDAH MASUK */}
+                {studentData ? mainContent : loginContent}
+
+                {/* MODAL POPUP GAMBAR LAYAR PENUH */}
+                {selectedImage && (
+                    <div className="absolute inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center backdrop-blur-sm">
+                        <button onClick={() => setSelectedImage(null)} className="absolute top-6 right-6 p-2.5 bg-red-500/20 hover:bg-red-500/40 border border-red-500/50 rounded-full text-red-400 transition-all z-[110]">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                        <div className={`w-full h-full overflow-auto custom-scrollbar ${isZoomed ? 'block' : 'flex items-center justify-center'} p-2`}>
+                            <img src={selectedImage} alt="Pratinjau Penuh" onClick={() => setIsZoomed(!isZoomed)} className={`transition-all duration-300 cursor-pointer ${isZoomed ? 'w-[200%] sm:w-[250%] max-w-none mt-10 ml-auto mr-auto object-contain' : 'max-w-full max-h-[85vh] object-contain'}`}/>
+                        </div>
+                        <div className="absolute bottom-8 bg-[#151822]/80 border border-indigo-500/30 text-cyan-300 text-xs font-bold px-5 py-2.5 rounded-full backdrop-blur-md pointer-events-none shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                            Ketuk gambar untuk {isZoomed ? 'Mengecilkan' : 'Memperbesar'} (Zoom)
+                        </div>
+                    </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+        
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
