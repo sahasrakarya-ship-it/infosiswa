@@ -25,8 +25,7 @@
                     },
                 });
                 
-                // Memicu jendela pop-up permintaan izin (Prompt Permission) saat aplikasi dibuka
-                OneSignal.Slidedown.promptPush();
+                // PENTING: Auto-prompt dihapus agar tidak agresif dan mengganggu user yang baru buka
             } catch (error) {
                 console.warn("OneSignal Web Push belum dikonfigurasi penuh di dashboard:", error);
             }
@@ -258,16 +257,57 @@
 
           const [deferredPrompt, setDeferredPrompt] = useState(null);
           const [showInstallButton, setShowInstallButton] = useState(false);
+          
+          // State tambahan untuk mengelola Notifikasi OneSignal
+          const [isSubscribed, setIsSubscribed] = useState(false);
+          const [notifMessage, setNotifMessage] = useState('');
 
           const appId = 'satelit-sekolah-app';
 
+          // Fungsi Pemicu Izin Notifikasi (Sesuai Syarat & Ketentuan Browser Terkini)
           const requestNotification = () => {
             if (window.OneSignalDeferred) {
                 window.OneSignalDeferred.push(async function(OneSignal) {
-                    await OneSignal.Notifications.requestPermission();
+                    // Pengecekan status native browser jika user sebelumnya mem-blokir
+                    if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+                        setNotifMessage("Izin diblokir browser. Buka pengaturan situs untuk mengizinkan.");
+                        setTimeout(() => setNotifMessage(''), 4000);
+                        return;
+                    }
+                    
+                    try {
+                        // Jalankan prompt permission bawaan OneSignal V16
+                        await OneSignal.Notifications.requestPermission();
+                    } catch (error) {
+                        console.error("Gagal meminta izin push:", error);
+                    }
                 });
             }
           };
+
+          // Memasang Observer OneSignal saat Aplikasi Terbuka (Real-time Status Check)
+          useEffect(() => {
+              if (window.OneSignalDeferred) {
+                  window.OneSignalDeferred.push(function(OneSignal) {
+                      // 1. Cek status pertama kali saat aplikasi memuat
+                      if (OneSignal.User && OneSignal.User.PushSubscription) {
+                          setIsSubscribed(OneSignal.User.PushSubscription.optedIn);
+                          
+                          // 2. Pasang pendengar kejadian (listener) jika status berubah sewaktu-waktu
+                          OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+                              const isOptedIn = event.current.optedIn;
+                              setIsSubscribed(isOptedIn);
+                              
+                              if (isOptedIn) {
+                                  // Berikan feedback visual bahwa mereka sukses berlangganan
+                                  setNotifMessage("Notifikasi berhasil diaktifkan.");
+                                  setTimeout(() => setNotifMessage(''), 3000);
+                              }
+                          });
+                      }
+                  });
+              }
+          }, []);
 
           useEffect(() => {
             // PWA Setup: Deteksi status instalasi dan trigger browser
@@ -368,6 +408,18 @@
               setLoginError(''); 
               setStudentData(found);
               localStorage.setItem('smpn2ayah_student_session', JSON.stringify(found));
+              
+              // Ekstrak angka tingkat kelas saja (contoh: "9E" menjadi "9")
+              const tingkatKelas = found.kelas ? String(found.kelas).match(/\d+/)?.[0] : null;
+              
+              if (window.OneSignalDeferred && tingkatKelas) {
+                  window.OneSignalDeferred.push(function(OneSignal) {
+                      // Mengelompokkan berdasarkan angkanya saja (7, 8, atau 9)
+                      OneSignal.User.addTag("kelas", tingkatKelas);
+                      // Semua siswa yang login otomatis masuk kategori umum
+                      OneSignal.User.addTag("kategori", "umum");
+                  });
+              }
             } else setLoginError("Username atau Password salah.");
           };
 
@@ -614,18 +666,26 @@
                           <span className="text-[10px] text-[#00d2ff] font-semibold tracking-wide">KELAS {studentData?.kelas || "-"}</span>
                       </div>
                   </div>
-                  {uploadError ? (
-                      <span className="text-[9px] text-red-400 font-medium px-2 relative z-10">{uploadError}</span>
-                  ) : (
-                      <div className="flex items-center gap-2 relative z-10">
+                  
+                  {/* Sistem Penampil Dinamis untuk Tombol Lonceng & Pesan Error */}
+                  <div className="flex items-center gap-2 relative z-10">
+                      {!isSubscribed && (
                           <button onClick={requestNotification} className="p-2 bg-indigo-900/30 hover:bg-indigo-800/40 text-indigo-400 border border-indigo-900/50 rounded-xl transition-all" title="Aktifkan Notifikasi">
                               <Bell size={18} />
                           </button>
-                          <button onClick={handleLogout} className="p-2 bg-red-900/30 hover:bg-red-800/40 text-red-400 border border-red-900/50 rounded-xl transition-all" title="Keluar">
-                              <LogOut size={18} />
-                          </button>
-                      </div>
-                  )}
+                      )}
+                      <button onClick={handleLogout} className="p-2 bg-red-900/30 hover:bg-red-800/40 text-red-400 border border-red-900/50 rounded-xl transition-all" title="Keluar">
+                          <LogOut size={18} />
+                      </button>
+                      
+                      {(uploadError || notifMessage) && (
+                          <div className="absolute -bottom-6 right-0 whitespace-nowrap bg-[#0c1220]/90 px-2 py-1 rounded border border-[#1e293b] shadow-lg pointer-events-none">
+                              <span className={`text-[9px] font-medium ${uploadError || notifMessage.includes('ditolak') || notifMessage.includes('diblokir') ? 'text-red-400' : 'text-emerald-400'}`}>
+                                  {uploadError || notifMessage}
+                              </span>
+                          </div>
+                      )}
+                  </div>
               </div>
 
               <div className="flex-1 flex items-center justify-center relative z-10 pb-4 w-full">
