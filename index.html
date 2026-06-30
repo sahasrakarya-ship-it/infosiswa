@@ -264,7 +264,7 @@
           const requestNotification = () => {
             if (window.OneSignalDeferred) {
                 window.OneSignalDeferred.push(async function(OneSignal) {
-                    await OneSignal.Slidedown.promptPush();
+                    await OneSignal.Notifications.requestPermission();
                 });
             }
           };
